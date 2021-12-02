@@ -1,0 +1,46 @@
+---
+title: "Advent of Code - Day 2"
+author: "Lakshya Agarwal"
+output: html_notebook
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(stringr)
+```
+
+```{r}
+data <- read_csv('./day2.csv')
+data
+```
+# Part 1
+
+```{r}
+data %>%
+  separate(data, c("direction", "step")) %>%
+  mutate(step = as.integer(step)) %>%
+  group_by(direction) %>%
+  summarise(step = sum(step)) %>%
+  pivot_wider(names_from = direction, values_from = step) %>%
+  mutate(depth = down - up) %>%
+  mutate(multiple = forward * depth) %>%
+  pull(multiple)
+```
+# Part 2
+
+```{r}
+data %>% 
+  separate(data, c("direction", "step")) %>%
+  mutate(step = as.numeric(step)) %>%
+  mutate(aim = case_when(direction == "up" ~ -step, 
+                         direction == "down" ~ step,
+                         TRUE ~ 0)) %>%
+  mutate(run_aim = cumsum(aim)) %>%
+  mutate(run_hor = cumsum(if_else(direction == "forward", step, 0))) %>%
+  mutate(depth = if_else(direction == "forward", run_aim * step, 0)) %>%
+  summarise(horizontal = sum(if_else(direction == "forward", step, 0)),
+            depth = sum(depth)) %>%
+  mutate(multiple = horizontal * depth) %>%
+  pull(multiple)
+```
+
