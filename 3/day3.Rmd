@@ -1,0 +1,107 @@
+---
+title: "Advent of Code - Day 2"
+author: "Lakshya Agarwal"
+output: html_notebook
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(stringr)
+```
+
+```{r}
+data <- read_delim("./day3.txt", delim = " ") %>%
+  separate(data, sep = "", into = paste("X", 0:12, sep = "_")) %>%
+  select(-X_0)
+```
+
+# Part 1
+
+```{r}
+gamma <- data %>%
+  pivot_longer(cols = c("X_1":"X_12"), names_to = "column_name") %>%
+  group_by(column_name) %>%
+  count(value) %>% 
+  top_n(1) %>%
+  select(-n) %>%
+  pivot_wider(names_from = column_name, values_from = value) %>%
+  select(paste("X", 1:12, sep="_")) %>%
+  unite(col = "gamma", paste("X", 1:12, sep="_"), sep = "") %>%
+  mutate(gamma = strtoi(gamma, base = 2)) %>%
+  pull(gamma)
+
+epsilon <- data %>%
+  pivot_longer(cols = c("X_1":"X_12"), names_to = "column_name") %>%
+  group_by(column_name) %>%
+  count(value) %>%
+  top_n(-1) %>%
+  select(-n) %>%
+  pivot_wider(names_from = column_name, values_from = value) %>%
+  select(paste("X", 1:12, sep="_")) %>%
+  unite(col = "epsilon", paste("X", 1:12, sep="_"), sep = "") %>%
+  mutate(epsilon = strtoi(epsilon, base = 2)) %>%
+  pull(epsilon)
+
+
+gamma * epsilon
+```
+# Part 2
+```{r}
+bit_criteria <- function(nums, mode = "top") {
+  bit <- nums %>%
+    rename("value" = 1) %>%
+    group_by(value) %>%
+    count() %>%
+    ungroup() %>%
+    top_n(wt = n, if_else(mode == "top",1,-1))
+  
+  if(nrow(bit) > 1) {
+    if(mode == "top") {
+      return('1')
+    }
+    else {
+      return('0')
+    }
+  } else {
+    return (bit %>% pull(value))
+  }
+}
+```
+
+
+```{r}
+get_rating <- function(data, rating = "oxygen") {
+  data_f <- data
+  
+  for (i in seq_len(12)) {
+    bc <- data_f %>%
+      select(paste("X_", i, sep = "")) %>%
+      bit_criteria(mode = if_else(rating == "oxygen", "top", "bottom"))
+    
+    data_f <- data_f %>%
+      filter(!!as.name(paste("X_", i, sep = "")) == bc)
+    
+    if (nrow(data_f) == 1) {
+      value <- data_f %>%
+        unite(col = "binary",
+              paste("X", 1:12, sep = "_"),
+              sep = "") %>%
+        mutate(decimal = strtoi(binary, base = 2)) %>%
+        pull(decimal)
+        
+      return(value)
+      
+      break
+    }
+  }
+}
+```
+
+
+```{r}
+oxygen <- get_rating(data, "oxygen")
+co2 <- get_rating(data, "co2")
+
+oxygen * co2
+```
+
